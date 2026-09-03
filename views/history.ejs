@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= machine.machine_name %> - History</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --text-color: #212529;
+            --box-bg: #ffffff;
+            --border-color: #dee2e6;
+            --table-text: #212529;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121824;
+            --text-color: #f8f9fa;
+            --box-bg: #1e293b;
+            --border-color: #334155;
+            --table-text: #f8f9fa;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .card-custom {
+            background-color: var(--box-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        .table {
+            color: var(--table-text) !important;
+            background-color: var(--box-bg);
+        }
+
+        .theme-switch {
+            cursor: pointer;
+            font-size: 18px;
+            padding: 6px 12px;
+            border-radius: 50px;
+            background: var(--box-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+    </style>
+</head>
+<body class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Machine History</h2>
+            <h5 class="text-success"><%= machine.machine_name %> <span class="text-muted fs-6">(<%= machine.line_name %> - Sec <%= machine.machine_section %>)</span></h5>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <button class="theme-switch" onclick="toggleTheme()" id="themeBtn">🌙</button>
+            <a href="/" class="btn btn-secondary shadow-sm"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="/add?machine_id=<%= machine.machine_id %>" class="btn btn-success shadow-sm"><i class="fa-solid fa-plus"></i> Add Record</a>
+        <div class="input-group" style="width: 320px;">
+            <input type="text" id="searchInput" class="form-control card-custom" placeholder="🔍 Search records..." onkeyup="filterTable()">
+        </div>
+    </div>
+
+    <div class="table-responsive shadow-sm rounded">
+        <table class="table table-bordered table-striped align-middle mb-0" id="historyTable">
+            <thead class="table-dark">
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Issue / Task</th>
+                    <th>Parts Replaced</th>
+                    <th>Qty</th>
+                    <th>Engineer</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (history.length === 0) { %>
+                    <tr><td colspan="7" class="text-center text-muted py-4">No maintenance history found.</td></tr>
+                <% } else { %>
+                    <% history.forEach(row => { %>
+                    <tr>
+                        <td><%= row.maintenance_date.toISOString().split('T')[0] %></td>
+                        <td><span class="badge bg-success"><%= row.maintenance_type %></span></td>
+                        <td><%= row.issue_task %></td>
+                        <td><%= row.parts_replaced || '-' %></td>
+                        <td><%= row.replaced_quantity || '-' %></td>
+                        <td><%= row.technician_engineer %></td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-1">
+                                <a href="/edit/<%= row.record_id %>" class="btn btn-sm btn-warning" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
+                                <a href="/print-pdf/<%= row.record_id %>" target="_blank" class="btn btn-sm btn-danger" title="PDF Report"><i class="fa-solid fa-file-pdf"></i></a>
+                                <a href="/send-email/<%= row.record_id %>" class="btn btn-sm btn-info text-white" title="Send Email" onclick="return confirm('Send email report?');"><i class="fa-solid fa-envelope"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    <% }) %>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function filterTable() {
+            let input = document.getElementById("searchInput");
+            let filter = input.value.toLowerCase();
+            let table = document.getElementById("historyTable");
+            let tr = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < tr.length; i++) {
+                let td = tr[i].getElementsByTagName("td");
+                let rowText = "";
+                for (let j = 0; j < td.length - 1; j++) {
+                    if (td[j]) rowText += td[j].textContent || td[j].innerText;
+                }
+                tr[i].style.display = rowText.toLowerCase().includes(filter) ? "" : "none";
+            }
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeBtn = document.getElementById('themeBtn');
+            if (html.getAttribute('data-theme') === 'dark') {
+                html.removeAttribute('data-theme');
+                themeBtn.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.setAttribute('data-theme', 'dark');
+                themeBtn.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.getElementById('themeBtn').textContent = '☀️';
+        }
+    </script>
+</body>
+</html>

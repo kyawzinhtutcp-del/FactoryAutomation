@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- PWA Manifest Link -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0284c7">
+
+<!-- Service Worker Registration Script -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(() => console.log('Service Worker Registered Successfully!'));
+  }
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factory Automation Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-overlay: rgba(240, 243, 248, 0.90);
+            --text-color: #0f172a;
+            --box-bg: rgba(255, 255, 255, 0.85);
+            --border-color: rgba(203, 213, 225, 0.7);
+            --header-bg: #059669;
+            --btn-hover-bg: #047857;
+            --footer-bg: rgba(255, 255, 255, 0.9);
+        }
+
+        [data-theme="dark"] {
+            --bg-overlay: rgba(11, 15, 25, 0.94);
+            --text-color: #f8f9fa;
+            --box-bg: rgba(30, 41, 59, 0.80);
+            --border-color: rgba(51, 65, 85, 0.8);
+            --header-bg: #0d9488;
+            --btn-hover-bg: #14b8a6;
+            --footer-bg: rgba(30, 41, 59, 0.9);
+        }
+
+        body {
+            background: linear-gradient(var(--bg-overlay), var(--bg-overlay)), 
+                        url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=1920&auto=format&fit=crop') no-repeat center center fixed;
+            background-size: cover;
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.5s ease, color 0.3s ease;
+        }
+
+        .main-content {
+            flex: 1;
+        }
+
+        .dashboard-title {
+            animation: fadeInDown 0.8s ease-in-out;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .line-header {
+            background: linear-gradient(135deg, #0d9488, #047857);
+            color: white;
+            text-align: center;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: bold;
+            margin-top: 35px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(13, 148, 136, 0.25);
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            animation: fadeInUp 0.6s ease-in-out;
+        }
+
+        .section-header {
+            background: linear-gradient(135deg, var(--header-bg), #065f46);
+            color: white;
+            text-align: center;
+            padding: 9px;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-bottom: 14px;
+            font-size: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            letter-spacing: 0.5px;
+        }
+
+        .machine-btn {
+            display: flex;
+            align-items: center;
+            background-color: var(--box-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color) !important;
+            padding: 10px 12px;
+            margin-bottom: 9px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 500;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.04);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .machine-btn:hover {
+            background: var(--btn-hover-bg);
+            color: #ffffff !important;
+            border-color: #2dd4bf;
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 20px rgba(13, 148, 136, 0.35);
+        }
+
+        .machine-btn:hover .machine-icon {
+            color: #ffffff !important;
+            transform: rotate(15deg) scale(1.2);
+        }
+
+        .machine-icon {
+            margin-right: 10px;
+            font-size: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .section-box {
+            background: var(--box-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        .section-box:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 35px 0 rgba(0, 0, 0, 0.15);
+        }
+
+        .theme-switch {
+            cursor: pointer;
+            font-size: 18px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            background: var(--box-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .theme-switch:hover {
+            transform: scale(1.1);
+        }
+
+        /* Footer Style */
+        .footer-banner {
+            background: var(--footer-bg);
+            backdrop-filter: blur(15px);
+            border-top: 1px solid var(--border-color);
+            padding: 15px 0;
+            margin-top: 50px;
+            text-align: center;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <div class="container-fluid px-4 py-4 main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4 dashboard-title">
+            <div>
+                <h2 class="fw-bold mb-0"><i class="fa-solid fa-microchip text-teal"></i> Factory Automation Dashboard</h2>
+                <p class="text-secondary small mb-0">Industrial IoT Control & Real-time Maintenance Center</p>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <button class="theme-switch" onclick="toggleTheme()" id="themeBtn" title="Toggle Mode">
+                    🌙
+                </button>
+                <a href="/add" class="btn btn-success fw-bold px-3 shadow-lg" style="background: linear-gradient(135deg, #0d9488, #047857); border: none;">
+                    <i class="fa-solid fa-plus-circle me-1"></i> Add Record
+                </a>
+            </div>
+        </div>
+
+        <hr class="border-secondary opacity-50">
+
+        <% 
+            let lines = [...new Set(machines.map(m => m.line_name))];
+            
+            // Symbol နဲ့ Color Mapping array for unique styling
+            const iconPool = [
+                { icon: 'fa-robot text-primary', color: '#3b82f6' },
+                { icon: 'fa-gears text-success', color: '#10b981' },
+                { icon: 'fa-bolt text-warning', color: '#f59e0b' },
+                { icon: 'fa-fire-flame-curved text-danger', color: '#ef4444' },
+                { icon: 'fa-gauge-high text-info', color: '#06b6d4' },
+                { icon: 'fa-dharmachakra text-purple', color: '#8b5cf6' },
+                { icon: 'fa-industry text-secondary', color: '#64748b' },
+                { icon: 'fa-cube text-teal', color: '#14b8a6' }
+            ];
+        %>
+
+        <% lines.forEach(line => { %>
+            <div class="line-header fs-5"><i class="fa-solid fa-network-wired me-2"></i><%= line %></div>
+            
+            <div class="row">
+                <% 
+                    let sections = ['A', 'B', 'C', 'D'];
+                %>
+                <% sections.forEach(sec => { 
+                    let secMachines = machines.filter(m => m.line_name === line && m.machine_section === sec);
+                    if (secMachines.length > 0) {
+                %>
+                    <div class="col-md-3">
+                        <div class="section-box">
+                            <div class="section-header">Section <%= sec %></div>
+                            <% secMachines.forEach((m, idx) => { 
+                                // Automatic unique icon & color selection based on machine id/index
+                                let symbolObj = iconPool[m.machine_id % iconPool.length];
+                            %>
+                                <div class="d-flex mb-2">
+                                    <a href="/machine/<%= m.machine_id %>" class="machine-btn flex-grow-1 m-0">
+                                        <i class="fa-solid <%= symbolObj.icon %> machine-icon" style="color: <%= symbolObj.color %> !important;"></i> 
+                                        <span><%= m.machine_name %></span>
+                                    </a>
+                                    <a href="/add?machine_id=<%= m.machine_id %>" class="btn btn-sm btn-success ms-1 d-flex align-items-center justify-content-center shadow-sm" title="Add Record" style="width: 34px; background: <%= symbolObj.color %>; border: none; transition: 0.2s;">
+                                        <i class="fa-solid fa-plus text-white"></i>
+                                    </a>
+                                </div>
+                            <% }) %>
+                        </div>
+                    </div>
+                <% 
+                    }
+                }) %>
+            </div>
+        <% }) %>
+    </div>
+
+    <!-- Footer with Developer Info -->
+    <footer class="footer-banner">
+        <div class="container text-secondary small">
+            <p class="mb-1 fw-bold text-teal" style="letter-spacing: 0.5px;">
+                <i class="fa-solid fa-code text-success me-1"></i> Factory Automation System &copy; 2026
+            </p>
+            <p class="mb-0 text-muted">
+                Created by: <span class="fw-bold text-primary">Kyaw Zin Htut</span> <span class="badge bg-secondary text-white ms-1">BE-EP</span>
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeBtn = document.getElementById('themeBtn');
+            if (html.getAttribute('data-theme') === 'dark') {
+                html.removeAttribute('data-theme');
+                themeBtn.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.setAttribute('data-theme', 'dark');
+                themeBtn.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.getElementById('themeBtn').textContent = '☀️';
+        }
+    </script>
+</body>
+</html>
