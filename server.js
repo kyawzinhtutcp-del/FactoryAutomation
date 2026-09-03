@@ -9,15 +9,20 @@ const app = express();
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// Render နှင့် Local နှစ်ခုစလုံး အလုပ်လုပ်နိုင်ရန် Environment Variables သုံးခြင်း
 const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'Treasure@22', // ကိုယ့် MySQL password ထည့်ရန်
-    database: 'factory_db'
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || 'Treasure@22',
+    database: process.env.DB_NAME || 'factory_db',
+    port: process.env.DB_PORT || 3306
 });
 
 db.connect((err) => {
-    if (err) throw err;
+    if (err) {
+        console.error('Database connection failed:', err.stack);
+        return;
+    }
     console.log('MySQL Database Connected Successfully!');
 });
 
@@ -25,16 +30,13 @@ db.connect((err) => {
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'kyawzinhtut@yatharcho.com', // သင်၏ Gmail လိပ်စာ
-        pass: 'KZH@ytci' // သင်၏ Gmail App Password
+        user: process.env.EMAIL_USER || 'kyawzinhtut@yatharcho.com',
+        pass: process.env.EMAIL_PASS || 'KZH@ytci'
     }
 });
 
-// Dashboard View (Fixed for duplicates)
-// Dashboard View - Line/Section အလိုက် Duplicate မပါဘဲ စုထုတ်ရန်
-// Dashboard View - စက်ရုံအလုပ်လုပ်ပုံ အစဉ်လိုက် (Sequence) အတိုင်း ပေါ်လာစေရန်
+// Dashboard View
 app.get('/', (req, res) => {
-    // machine_id (သို့မဟုတ် sequence order) အလိုက် အစဉ်လိုက် စီရန်
     let query = `
         SELECT MIN(machine_id) as machine_id, line_name, machine_section, machine_name 
         FROM machines 
@@ -43,15 +45,19 @@ app.get('/', (req, res) => {
     `;
     
     db.query(query, (err, machines) => {
-        if (err) throw err;
+        if (err) {
+            console.error(err);
+            return res.status(500).send('Database Error');
+        }
         res.render('index', { machines: machines });
     });
 });
+
 // Machine History View
 app.get('/machine/:id', (req, res) => {
     const machineId = req.params.id;
     db.query('SELECT * FROM machines WHERE machine_id = ?', [machineId], (err, machineResult) => {
-        if (err) throw err;
+        if (err || machineResult.length === 0) return res.status(404).send('Machine not found');
         db.query('SELECT * FROM maintenance_history WHERE machine_id = ? ORDER BY maintenance_date DESC', [machineId], (err, historyResult) => {
             if (err) throw err;
             res.render('history', { 
@@ -86,7 +92,7 @@ app.post('/add', (req, res) => {
 app.get('/edit/:id', (req, res) => {
     const recordId = req.params.id;
     db.query('SELECT * FROM maintenance_history WHERE record_id = ?', [recordId], (err, recordResult) => {
-        if (err) throw err;
+        if (err || recordResult.length === 0) return res.status(404).send('Record not found');
         db.query('SELECT * FROM machines', (err, machines) => {
             if (err) throw err;
             res.render('edit', { record: recordResult[0], machines: machines });
@@ -134,7 +140,8 @@ app.get('/print-pdf/:id', (req, res) => {
         // Details Section
         doc.fillColor('#000000').fontSize(11);
         doc.text(`Record ID: #${row.record_id}`, { continued: true });
-        doc.text(`Date: ${row.maintenance_date.toISOString().split('T')[0]}`, { align: 'right' });
+        const formattedDate = row.maintenance_date ? row.maintenance_date.toISOString().split('T')[0] : '';
+        doc.text(`Date: ${formattedDate}`, { align: 'right' });
         doc.moveDown();
 
         // Machine Info Box
@@ -151,7 +158,7 @@ app.get('/print-pdf/:id', (req, res) => {
         doc.moveDown(0.5);
         doc.fontSize(10).fillColor('#000000');
         
-        doc.text(`Maintenance Type:`, { continued: true, bold: true }).text(` ${row.maintenance_type}`);
+        doc.text(`Maintenance Type:`, { continued: true }).text(` ${row.maintenance_type}`);
         doc.text(`Parts Replaced:`, { continued: true }).text(` ${row.parts_replaced || 'None'}`);
         doc.text(`Replaced Quantity:`, { continued: true }).text(` ${row.replaced_quantity || 0}`);
         doc.text(`Technician / Engineer:`, { continued: true }).text(` ${row.technician_engineer}`);
@@ -159,7 +166,7 @@ app.get('/print-pdf/:id', (req, res) => {
 
         doc.text('Issue & Task Description:');
         doc.rect(50, doc.y, 512, 50).stroke('#cccccc');
-        doc.text(row.issue_task, 60, doc.y + 10, { width: 492 });
+        doc.text(row.issue_task || '', 60, doc.y + 10, { width: 492 });
 
         doc.end();
     });
@@ -178,17 +185,18 @@ app.get('/send-email/:id', (req, res) => {
             return res.send("<script>alert('Record not found!'); window.history.back();</script>");
         }
         const row = results[0];
+        const formattedDate = row.maintenance_date ? row.maintenance_date.toISOString().split('T')[0] : '';
 
         const mailOptions = {
-            from: 'your_email@gmail.com',
-            to: 'manager_email@gmail.com', // ပို့လိုသည့် Manager/Supervisor ၏ Email လိပ်စာ
+            from: 'kyawzinhtut@yatharcho.com',
+            to: 'manager_email@gmail.com',
             subject: `Maintenance Report: ${row.machine_name} (${row.line_name})`,
             text: `
 Hello Manager,
 
 A new maintenance record has been submitted. Here are the details:
 
-- Date: ${row.maintenance_date.toISOString().split('T')[0]}
+- Date: ${formattedDate}
 - Line: ${row.line_name} (Section ${row.machine_section})
 - Machine: ${row.machine_name}
 - Maintenance Type: ${row.maintenance_type}
@@ -211,6 +219,8 @@ Factory Automation System
     });
 });
 
-app.listen(3000, () => {
-    console.log('Server is running on http://localhost:3000');
+// Render ပေါ်တွင် အလုပ်လုပ်စေရန် Dynamic Port သုံးခြင်း
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
